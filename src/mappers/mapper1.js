@@ -1,7 +1,7 @@
-import Mapper from './mapper';
+import Mapper from './mapper_old';
 import {SINGLESCREEN_MIRRORING, HORIZONTAL_MIRRORING, VERTICAL_MIRRORING} from '../rom';
 
-class Mapper1 extends Mapper {
+export default class Mapper1 extends Mapper {
     constructor(nes) {
         super(nes);
         this._$name = 'Nintendo MMC1';

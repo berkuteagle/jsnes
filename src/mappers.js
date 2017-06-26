@@ -1,4 +1,4 @@
-import Mapper from './mappers/mapper';
+import Mapper from './mappers/mapper_old';
 import Mapper1 from './mappers/mapper1';
 import Mapper2 from './mappers/mapper2';
 import Mapper4 from './mappers/mapper4';

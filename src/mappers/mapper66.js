@@ -1,4 +1,4 @@
-import Mapper from './mapper';
+import Mapper from './mapper_old';
 
 export default class Mapper66 extends Mapper {
     constructor(nes) {
