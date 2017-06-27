@@ -1,13 +1,12 @@
 import ROM from './rom.js';
 import Memory, {MemoryBlock} from './memory.js';
+import PPU from './ppu.js';
 
 const rom = Symbol('rom');
-const ram = Symbol('ram');
-const vram1 = Symbol('vram1');
-const vram2 = Symbol('vram2');
 const mem = Symbol('mem');
 const vmem = Symbol('vmem');
-const state = Symbol('state');
+const nesState = Symbol('nesState');
+const ppu = Symbol('ppu');
 
 const NES_STATE_INIT = 0;
 const NES_STATE_LOAD = 1;
@@ -24,25 +23,30 @@ export default class JSNES {
         this[mem] = new Memory();
         this[vmem] = new Memory();
 
-        this[ram] = new MemoryBlock(NES_RAM_SIZE);
+        let ram = new MemoryBlock(NES_RAM_SIZE);
 
-        this[mem].register(this[ram], 0x0000, 0x07FF); //RAM
-        this[mem].register(this[ram], 0x0800, 0x0FFF); //Mirror #1 of RAM
-        this[mem].register(this[ram], 0x1000, 0x17FF); //Mirror #2 of RAM
-        this[mem].register(this[ram], 0x1800, 0x1FFF); //Mirror #3 of RAM
+        this[mem].register(ram, 0x0000, 0x07FF); //RAM
+        this[mem].register(ram, 0x0800, 0x0FFF); //Mirror #1 of RAM
+        this[mem].register(ram, 0x1000, 0x17FF); //Mirror #2 of RAM
+        this[mem].register(ram, 0x1800, 0x1FFF); //Mirror #3 of RAM
 
-        this[vram1] = new MemoryBlock(NES_VRAM_S_SIZE + NES_VRAM_A_SIZE);
-        this[vram2] = new MemoryBlock(NES_VRAM_S_SIZE + NES_VRAM_A_SIZE);
+        let vram = new MemoryBlock((NES_VRAM_S_SIZE + NES_VRAM_A_SIZE) * 2);
 
-        this[vmem].register(this[vram1],0x2000, 0x23FF); //VRAM #1
-        this[vmem].register(this[vram2],0x2400, 0x27FF); //VRAM #2
-        this[vmem].register(this[vram1],0x3000, 0x33FF); //Mirror of VRAM #1
-        this[vmem].register(this[vram2],0x3400, 0x37FF); //Mirror of VRAM #2
+        this[vmem].register(vram, 0x2000, 0x27FF); //VRAM
+        this[vmem].register(vram, 0x3000, 0x37FF); //Mirror of VRAM
 
-        this[state] = NES_STATE_INIT;
+        this[ppu] = new PPU(this[vmem]);
+
+        this[mem].register(this[ppu], 0x2000, 0x2007);     //PPU
+
+        let dma = this[ppu].getDMA(this[mem]);
+
+        this[mem].register(dma, 0x4014, 0x4014); //DMA
+
+        this[nesState] = NES_STATE_INIT;
     }
 
-    get version() {
+    static get version() {
         return '0.2.0';
     }
 
@@ -55,7 +59,7 @@ export default class JSNES {
     }
 
     get state() {
-        return this[state];
+        return this[nesState];
     }
 
     loadROM(file) {
@@ -66,15 +70,22 @@ export default class JSNES {
                 try {
                     this[rom] = new ROM(buffer);
                 } catch (err) {
-                    this[state] = NES_STATE_LOAD_ERROR;
+                    this[nesState] = NES_STATE_LOAD_ERROR;
                     reject(err);
                 }
-                this[state] = NES_STATE_LOADED;
+
+                this[mem].register(this[rom].prg, 0x8000, 0xBFFF, true); //PRG_ROM #1
+                this[mem].register(this[rom].prg, 0xC000, 0xFFFF, true); //PRG_ROM #2
+
+                this[vmem].register(this[rom].chr, 0x0000, 0x0FFF, true); //CHR_ROM #1
+                this[vmem].register(this[rom].chr, 0x1000, 0x1FFF, true); //CHR_ROM #2
+
+                this[nesState] = NES_STATE_LOADED;
                 resolve(buffer);
             }.bind(this)
         });
 
-        this[state] = NES_STATE_LOAD;
+        this[nesState] = NES_STATE_LOAD;
         reader.readAsArrayBuffer(file);
         return promise;
     }

@@ -19,6 +19,8 @@ const header = Symbol('header');
 const prg = Symbol('prg');
 const chr = Symbol('chr');
 const mapper = Symbol('mapper');
+const mapperH = Symbol('mapperH');
+const blockType = Symbol('blockType');
 
 export default class ROM {
     constructor(buffer) {
@@ -41,20 +43,54 @@ export default class ROM {
         return new ROMHeader(this[header]);
     }
 
+    get prg() {
+        return new ROMPRG(this[mapper]);
+    }
+
+    get chr() {
+        return new ROMCHR(this[mapper]);
+    }
+}
+
+class ROMSection {
+    constructor(mmap) {
+        this[blockType] = '';
+        this[mapper] = mmap;
+    }
+
     read(address) {
+        return this[mapperH]('read', address);
+    }
+
+    write(address, value) {
+        this[mapperH]('write', address, value);
+    }
+
+    [mapperH](action, address, value) {
         if (this[mapper]) {
-            return this[mapper].read(address);
+            let actionName = action + this[blockType];
+            if (actionName && typeof this[mapper][actionName] === 'function') {
+                return this[mapper][actionName](address, value);
+            } else {
+                throw Error(`Method ${actionName} not implemented for this mapper.`);
+            }
         } else {
             throw Error('Mapper is not defined.')
         }
     }
+}
 
-    write(address, value) {
-        if (this[mapper]) {
-            return this[mapper].write(address, value);
-        } else {
-            throw Error('Mapper is not defined.')
-        }
+class ROMPRG extends ROMSection {
+    constructor(mmap) {
+        super(mmap);
+        this[blockType] = 'PRG';
+    }
+}
+
+class ROMCHR extends ROMSection {
+    constructor(mmap) {
+        super(mmap);
+        this[blockType] = 'CHR';
     }
 }
 

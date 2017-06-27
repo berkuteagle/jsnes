@@ -1,23 +1,7 @@
-import Mapper from './mappers/mapper_old';
-import Mapper1 from './mappers/mapper1';
-import Mapper2 from './mappers/mapper2';
-import Mapper4 from './mappers/mapper4';
-import Mapper5 from './mappers/mapper5';
-import Mapper7 from './mappers/mapper7';
-import Mapper11 from './mappers/mapper11';
-import Mapper34 from './mappers/mapper34';
-import Mapper66 from './mappers/mapper66';
+import Mapper from './mappers/mapper.js';
 
 const index = {
-    0: Mapper,
-    1: Mapper1,
-    2: Mapper2,
-    4: Mapper4,
-    5: Mapper5,
-    7: Mapper7,
-    11: Mapper11,
-    34: Mapper34,
-    66: Mapper66
+    0: Mapper
 };
 
 const names = {

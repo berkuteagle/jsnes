@@ -1,7 +1,7 @@
 const ranges = Symbol('ranges');
 const rangeH = Symbol('rangeHandler');
 const objectByAddress = Symbol('rangeByAddress');
-const memory = Symbol('memory');
+const data = Symbol('data');
 
 export default class Memory {
     constructor() {
@@ -16,24 +16,24 @@ export default class Memory {
         return this[rangeH]('write', address, value);
     }
 
-    register(object, start, end) {
+    register(object, start, end, absolute) {
         if (this[objectByAddress](start) || this[objectByAddress](end)) {
             throw Error('Range for this addresses is already registered.');
         } else {
-            this[ranges].set({start: start, end: end}, object);
+            this[ranges].set({start: start, end: end, absolute: absolute || false}, object);
         }
     }
 
-    [rangeH](action, address, param) {
+    [rangeH](action, address, value) {
         let handler = this[objectByAddress](address);
         if (handler) {
             if (typeof handler.object[action] === 'function') {
-                return handler.object[action](address - handler.range.start, param);
+                return handler.object[action](address - (handler.range.absolute ? 0 : handler.range.start), value);
             } else {
-                throw Error(`Method ${action} not implemented for this range.`);
+                console.info(`Method ${action} not implemented for this range.`);
             }
         } else {
-            throw Error('Range for this address not registered.');
+            console.info(`Range for address [0x${('0000' + address.toString(16)).slice(-4)}] not registered.`);
         }
     }
 
@@ -53,23 +53,24 @@ export default class Memory {
 
 export class MemoryBlock {
     constructor(size) {
-        this[memory] = new Uint8Array(size);
-        this[memory].fill(0x0);
+        this[data] = new Uint8Array(size);
+        this[data].fill(0x0);
     }
 
     read(address) {
-        if (address > this[memory].length) {
-            throw Error('Out of memory');
+        if (address > this[data].length) {
+            console.info('Out of memory');
+            return 0x0;
         } else {
-            return this[memory][address];
+            return this[data][address];
         }
     }
 
     write(address, value) {
-        if (address > this[memory].length) {
-            throw Error('Out of memory');
+        if (address > this[data].length) {
+            console.info('Out of memory');
         } else {
-            return this[memory][address] = value > 0xFF ? 0xFF : value;
+            this[data][address] = value & 0xFF;
         }
     }
 }
